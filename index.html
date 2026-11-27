@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kōri — Anime Discovery Hub</title>
+<meta name="description" content="Discover anime, track what you watch, and find where to stream it legally. Free, no account, no signup." />
+<meta name="theme-color" content="#0c0b12" />
+<style>
+/* Kori — self-contained single-file site. No dependencies, no API required. */
+:root{
+  --bg:#0c0b12;--bg2:#13111d;--surface:#1a1726;--surface2:#231f33;--line:#2e2940;
+  --text:#f2eef8;--muted:#9b93ad;--accent:#ff4d8d;--accent2:#a56bff;--gold:#ffc857;
+  --radius:14px;--shadow:0 18px 50px rgba(0,0,0,.45);--header-h:70px;
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);text-decoration:none}a:hover{text-decoration:underline}img{display:block}
+.site-header{position:sticky;top:0;z-index:40;height:var(--header-h);background:rgba(12,11,18,.9);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.header-inner{max-width:1280px;height:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;color:var(--text);padding:0;flex-shrink:0}
+.brand-mark{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 6px 20px rgba(255,77,141,.35)}
+.brand-name{font-weight:800;letter-spacing:.18em;font-size:18px}
+.search-bar{flex:1;max-width:440px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:0 16px;height:42px;transition:border-color .2s,box-shadow .2s}
+.search-bar:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,77,141,.15)}
+.search-bar svg{width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;flex-shrink:0}
+.search-bar input{flex:1;background:none;border:0;outline:0;color:var(--text);min-width:0}
+.search-bar input::placeholder{color:var(--muted)}
+.search-clear{background:none;border:0;color:var(--muted);font-size:22px;line-height:1;padding:0 2px}
+.search-clear:hover{color:var(--text)}
+.main-nav{display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0}
+.nav-btn{background:none;border:0;color:var(--muted);padding:9px 14px;border-radius:9px;font-weight:600;font-size:14px;white-space:nowrap;transition:color .2s,background .2s}
+.nav-btn:hover{color:var(--text);background:var(--surface)}.nav-btn.active{color:var(--text);background:var(--surface2)}
+.list-count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:800}
+.hero{position:relative;min-height:440px;display:flex;align-items:flex-end;padding:56px 24px 48px;overflow:hidden;background:var(--bg2);isolation:isolate}
+.hero-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:center;opacity:.85}
+.hero-overlay{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(12,11,18,.97) 0%,rgba(12,11,18,.75) 45%,rgba(12,11,18,.2) 100%),linear-gradient(0deg,var(--bg) 0%,rgba(12,11,18,0) 60%)}
+.hero-content{max-width:1280px;width:100%;margin:0 auto}
+.hero-kicker{margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:.24em;color:var(--accent)}
+.hero h1{margin:0 0 14px;font-size:clamp(34px,5.5vw,68px);line-height:1.06;font-weight:850;max-width:780px;text-shadow:0 4px 30px rgba(0,0,0,.5)}
+.hero-synopsis{max-width:620px;color:#d6cfdf;font-size:15px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:0 0 24px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+.hero-meta{display:flex;flex-wrap:wrap;gap:18px;margin-top:26px;color:var(--muted);font-size:13px}
+.hero-meta strong{color:var(--text)}
+.btn{border:1px solid transparent;border-radius:10px;padding:11px 20px;font-weight:700;font-size:14px;transition:transform .15s,filter .2s,background .2s,border-color .2s}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#e6397e);color:#fff;box-shadow:0 10px 24px rgba(255,77,141,.28)}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.22);color:var(--text);backdrop-filter:blur(6px)}
+.btn-ghost:hover{background:rgba(255,255,255,.16)}
+.btn-load{background:var(--surface2);border-color:var(--line);color:var(--text);padding:12px 30px;margin-top:28px}
+.btn-load:hover{border-color:var(--accent)}
+.content-section{max-width:1280px;margin:0 auto;padding:40px 24px 72px}
+.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px;flex-wrap:wrap}
+.section-heading h2{margin:0;font-size:26px;font-weight:800}.section-heading p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px}
+.chip{background:var(--surface);border:1px solid var(--line);color:var(--muted);padding:6px 13px;border-radius:999px;font-size:12px;font-weight:600}
+.chip:hover{color:var(--text);border-color:var(--accent2)}
+.chip.active{background:var(--surface2);color:var(--text);border-color:var(--accent)}
+.view-toggle{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);padding:4px;border-radius:10px}
+.sort-btn{background:none;border:0;color:var(--muted);padding:7px 12px;border-radius:7px;font-size:13px;font-weight:600}
+.sort-btn.active{background:var(--surface2);color:var(--text)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:22px}
+.anime-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;display:flex;flex-direction:column}
+.anime-card:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:rgba(165,107,255,.5)}
+.card-poster{position:relative;aspect-ratio:3/4;background:var(--surface2);overflow:hidden}
+.card-poster img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.anime-card:hover .card-poster img{transform:scale(1.06)}
+.card-score{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:4px;background:rgba(12,11,18,.85);backdrop-filter:blur(6px);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:800;color:var(--gold)}
+.card-remove{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:8px;border:0;background:rgba(12,11,18,.85);color:var(--text);font-size:18px;line-height:1;display:grid;place-items:center;opacity:0;transition:opacity .2s}
+.anime-card:hover .card-remove{opacity:1}.card-remove:hover{background:var(--accent)}
+.card-body{padding:12px 13px 14px;flex:1;display:flex;flex-direction:column}
+.card-title{font-size:14px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+.card-info{margin-top:auto;padding-top:8px;color:var(--muted);font-size:12px;display:flex;gap:8px;flex-wrap:wrap}
+.status-select{width:100%;margin-top:10px;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}
+.state-block{text-align:center;padding:70px 20px;color:var(--muted)}
+.empty-icon{font-size:42px;color:var(--accent2);opacity:.7}
+.modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(5,4,9,.82);backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:5vh 20px;overflow-y:auto}
+.modal{position:relative;width:min(960px,100%);background:var(--bg2);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;animation:pop .2s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.98)}}
+.modal-close{position:absolute;top:16px;right:16px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:rgba(12,11,18,.7);color:var(--text);font-size:26px;line-height:1;backdrop-filter:blur(6px)}
+.modal-close:hover{background:var(--accent)}
+.modal-hero{position:relative;min-height:300px}
+.modal-hero .hero-art{filter:none;opacity:.8}
+.modal-hero .hero-overlay{background:linear-gradient(0deg,var(--bg2) 2%,rgba(19,17,29,.25) 85%)}
+.modal-hero-content{position:relative;z-index:1;padding:130px 32px 28px}
+.modal-hero-content h2{margin:0 0 10px;font-size:clamp(24px,4vw,38px);line-height:1.12}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.modal-actions .btn.in-list{background:var(--surface2);border-color:var(--accent);color:var(--accent)}
+.modal-main{padding:8px 32px 34px}
+.modal-stats{display:flex;flex-wrap:wrap;gap:26px;padding:18px 0;border-bottom:1px solid var(--line)}
+.stat{display:flex;flex-direction:column}.stat-label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+.stat-value{font-weight:800;font-size:17px}.stat-value.gold{color:var(--gold)}
+.modal-section{margin-top:24px}.modal-section h3{margin:0 0 10px;font-size:16px}
+.genre-tags{display:flex;flex-wrap:wrap;gap:8px}.genre-tag{background:var(--surface2);border:1px solid var(--line);padding:5px 11px;border-radius:999px;font-size:12px}
+.synopsis-text{color:#cfc8d9;font-size:14px}
+.stream-list{display:flex;flex-wrap:wrap;gap:10px}
+.stream-link{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--line);padding:9px 14px;border-radius:10px;color:var(--text);font-size:13px;font-weight:600}
+.stream-link:hover{border-color:var(--accent2);text-decoration:none}
+.stream-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2)}
+.site-footer{text-align:center;border-top:1px solid var(--line);padding:30px 24px 40px;color:var(--muted);font-size:13px}
+.site-footer p{margin:6px 0}.footer-note{color:#6f677f;font-size:12px}
+@media(max-width:900px){.header-inner{gap:12px;padding:0 14px}.search-bar{max-width:none}.nav-btn{padding:8px 10px;font-size:13px}.brand-name{display:none}}
+@media(max-width:620px){
+  :root{--header-h:118px}.site-header{height:var(--header-h)}
+  .header-inner{flex-wrap:wrap;align-content:center;gap:8px;padding:10px 14px}
+  .search-bar{order:3;flex-basis:100%}.main-nav{margin-left:auto}
+  .hero{min-height:400px;padding:40px 18px 36px}
+  .card-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
+  .content-section{padding:30px 16px 60px}.modal-backdrop{padding:0}
+  .modal{border-radius:0;min-height:100vh}.modal-hero-content{padding:120px 20px 24px}
+  .modal-main{padding:8px 20px 30px}.modal-stats{gap:18px}
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <button class="brand" id="brandBtn" aria-label="Kori home"><span class="brand-mark">霜</span><span class="brand-name">KŌRI</span></button>
+    <form class="search-bar" id="searchForm" role="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
+      <input id="searchInput" type="search" placeholder="Search anime by title..." autocomplete="off" aria-label="Search anime" />
+      <button type="button" class="search-clear" id="searchClear" aria-label="Clear search" hidden>&times;</button>
+    </form>
+    <nav class="main-nav" aria-label="Main navigation">
+      <button class="nav-btn active" data-view="home">Discover</button>
+      <button class="nav-btn" data-view="random">Random</button>
+      <button class="nav-btn" data-view="mylist">My List <span class="list-count" id="listCount">0</span></button>
+    </nav>
+  </div>
+</header>
+
+<main id="app">
+  <section class="hero" id="hero">
+    <div class="hero-art" id="heroArt"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <p class="hero-kicker">SPOTLIGHT</p>
+      <h1 id="heroTitle">Kōri</h1>
+      <p class="hero-synopsis" id="heroSynopsis">Discover something worth watching.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="heroDetails">View details</button>
+        <button class="btn btn-ghost" id="heroList">+ Add to list</button>
+        <button class="btn btn-ghost" id="heroShuffle">Surprise me</button>
+      </div>
+      <div class="hero-meta" id="heroMeta"></div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="section-heading">
+      <div><h2 id="sectionTitle">Discover Anime</h2><p id="sectionSubtitle">A hand-picked catalog of series and films. No signup, no tracking.</p></div>
+      <div class="view-toggle" id="viewToggle">
+        <button data-sort="score" class="sort-btn active">Top Rated</button>
+        <button data-sort="popular" class="sort-btn">Popular</button>
+        <button data-sort="year" class="sort-btn">Newest</button>
+      </div>
+    </div>
+    <div class="chip-row" id="genreChips"></div>
+    <div class="card-grid" id="cardGrid"></div>
+    <div class="state-block" id="emptyState" hidden><div class="empty-icon">空</div><h3>Nothing here yet</h3><p id="emptyMessage">Try another search or genre.</p></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>Kōri is an independent discovery catalog. Anime titles and artwork belong to their respective creators and studios.</p>
+  <p class="footer-note">Your list is stored only in this browser. No account, no data collection. Use the legal streaming links in each detail view.</p>
+</footer>
+
+<div class="modal-backdrop" id="modalBackdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-close" id="modalClose" aria-label="Close details">&times;</button>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* Kori catalog — curated metadata. Tuple: [title, score, episodes, year, type, genres(csv), studio, synopsis] */
+const RAW = [
+["Fullmetal Alchemist: Brotherhood",9.1,64,2009,"TV","Action|Adventure|Drama|Fantasy","Bones","Two brothers use alchemy to search for the Philosopher's Stone after a failed experiment costs them their bodies."],
+["Steins;Gate",9.1,24,2011,"TV","Drama|Sci-Fi|Thriller","White Fox","A self-styled mad scientist discovers his microwave can send messages into the past, with consequences that unravel quickly."],
+["Frieren: Beyond Journey's End",8.9,28,2023,"TV","Adventure|Drama|Fantasy","Madhouse","After the hero party defeats the demon king, an elf mage begins a long journey to understand the people she outlived."],
+["Attack on Titan",9.0,75,2013,"TV","Action|Drama|Fantasy","Wit Studio","Humanity hides behind enormous walls after giant titans devour the rest of the world. A new outbreak changes everything."],
+["Death Note",9.0,37,2006,"TV","Crime|Drama|Mystery|Supernatural","Madhouse","A brilliant student finds a notebook that kills anyone whose name is written in it, and a detective sets out to stop him."],
+["Hunter x Hunter",9.0,148,2011,"TV","Action|Adventure|Fantasy","Madhouse","A young boy sets out to become a Hunter and find his father, navigating a world of tests, spirits and dangerous rivals."],
+["One Piece",8.7,1120,1999,"TV","Action|Adventure|Fantasy","Toei Animation","A rubber-limbed pirate sails the Grand Line with a ragtag crew in search of the legendary treasure One Piece."],
+["Your Name",8.9,1,2016,"Movie","Drama|Romance|Supernatural","CoMix Wave","A boy in Tokyo and a girl in a mountain town begin swapping bodies, forming a bond across distance and time."],
+["Cowboy Bebop",8.9,26,1998,"TV","Action|Drama|Sci-Fi","Sunrise","A crew of bounty hunters drifts through the solar system on a spaceship, chasing bounties and their own pasts."],
+["Violet Evergarden",8.9,13,2018,"TV","Drama|Fantasy","Kyoto Animation","A former child soldier becomes an auto-memory-doll writer, crafting letters for people who cannot say what they feel."],
+["Gintama",8.9,201,2007,"TV","Action|Comedy|Sci-Fi","Bandai Namco","In an alternate Edo occupied by aliens, an eccentric samurai runs a odd-job business and stumbles into chaos."],
+["Demon Slayer: Kimetsu no Yaiba",8.8,26,2019,"TV","Action|Fantasy|Shounen","ufotable","A boy joins the Demon Slayer Corps after his sister is turned into a demon, determined to find a cure."],
+["Fate/stay night: Unlimited Blade Works",8.8,26,2014,"TV","Action|Drama|Fantasy|Romance","ufotable","Masters and heroic spirits battle for the Holy Grail in a war where every wish carries a cost."],
+["Made in Abyss",8.8,13,2017,"TV","Adventure|Drama|Fantasy|Mystery","Kinema Citrus","A girl and a robot boy descend into a vast, beautiful and lethal cavern that hides the secrets of the world."],
+["Cyberpunk: Edgerunners",8.7,10,2022,"ONA","Action|Sci-Fi","Trigger","A street kid in a techno-dystopian city becomes an edgerunner and burns bright in a world that rewards excess."],
+["Mob Psycho 100",8.7,37,2016,"TV","Action|Comedy|Supernatural","Bones","A mild-mannered middle schooler with overwhelming psychic powers tries to live a normal life."],
+["Re:Zero -Starting Life in Another World-",8.7,50,2016,"TV","Drama|Fantasy|Mystery|Psychological","White Fox","A teenager is pulled into another world where death sends him back in time, with every memory intact."],
+["Spirited Away",8.7,1,2001,"Movie","Adventure|Fantasy","Studio Ghibli","A young girl wanders into a world of spirits and must work in a bathhouse to free her parents."],
+["The Apothecary Diaries",8.7,24,2023,"TV","Drama|Historical|Mystery","Toho","A clever apothecary is sold into palace service and starts solving mysteries from behind the scenes."],
+["Neon Genesis Evangelion",8.6,26,1995,"TV","Action|Drama|Mecha|Psychological|Sci-Fi","Gainax","Teenagers pilot biomechanical machines against mysterious Angels while facing their own fractured psyches."],
+["Jujutsu Kaisen",8.6,24,2020,"TV","Action|Fantasy|Supernatural","MAPPA","A student swallows a cursed finger and enters the world of jujutsu sorcerers to contain a powerful curse."],
+["K-On!",8.6,26,2009,"TV","Comedy|Music|Slice of Life","Kyoto Animation","Four high school friends start a light music club and stumble into friendship, tea and rock songs."],
+["Bocchi the Rock!",8.6,12,2022,"TV","Comedy|Music|Slice of Life","CloverWorks","A painfully shy guitarist joins a band and faces every rehearsal like a boss fight."],
+["Odd Taxi",8.6,13,2021,"TV","Drama|Mystery","OLM","A walrus taxi driver listens to his passengers until one night's fare pulls him into a disappearance case."],
+["Fate/Zero",8.6,25,2011,"TV","Action|Fantasy","ufotable","Masters summon heroic spirits in a prior Holy Grail War, where ideals collide with ruthless ambition."],
+["Vinland Saga",8.6,24,2019,"TV","Action|Adventure|Drama|Historical","MAPPA","A young Norse boy is drawn into a world of Vikings and revenge, then searches for a different kind of life."],
+["Monogatari Series",8.6,28,2009,"TV","Comedy|Drama|Mystery|Romance|Supernatural","Shaft","A high schooler helps girls afflicted by strange supernatural phenomena, one elaborate conversation at a time."],
+["Chainsaw Man",8.5,12,2022,"TV","Action|Horror|Supernatural","MAPPA","A poor teenager merges with a chainsaw devil and joins a government unit fighting devils for a living."],
+["Spy x Family",8.5,25,2022,"TV","Action|Comedy|Family","CloverWorks","A spy, an assassin and a telepathic child form a fake family for a mission, hiding their secrets from each other."],
+["Ranking of Kings",8.5,23,2021,"TV","Action|Adventure|Drama|Fantasy","Wit Studio","A deaf and mute prince proves himself in a kingdom where strength is everything."],
+["Haikyuu!!",8.5,73,2014,"TV","Comedy|Drama|Sports","Production I.G","A short but determined volleyball player joins his school team and aims for the national championships."],
+["Tokyo Ghoul",8.5,24,2014,"TV","Action|Drama|Horror|Mystery|Supernatural","Studio Pierrot","A student becomes half-ghoul after an attack and must navigate the border between humans and monsters."],
+["Your Lie in April",8.5,22,2014,"TV","Drama|Music|Romance","A-1 Pictures","A former piano prodigy meets a free-spirited violinist who changes the way he hears music and life."],
+["JoJo's Bizarre Adventure",8.5,28,2012,"TV","Action|Adventure|Fantasy","David Production","A family line of fighters confronts supernatural Stands across decades and continents."],
+["Princess Mononoke",8.4,1,1997,"Movie","Action|Adventure|Fantasy","Studio Ghibli","A cursed prince travels west and finds himself between a forest god's defenders and an iron town."],
+["Howl's Moving Castle",8.4,1,2004,"Movie","Adventure|Fantasy|Romance","Studio Ghibli","A young hatmaker is cursed into an old woman and takes work in a wizard's walking castle."],
+["A Silent Voice",8.4,1,2016,"Movie","Drama","Kyoto Animation","A former bully seeks redemption from a deaf classmate he once tormented, learning to reconnect with people."],
+["Parasyte -the maxim-",8.4,24,2014,"TV","Action|Drama|Horror|Sci-Fi|Thriller","Madhouse","Alien parasites take over human bodies; one teen keeps his own mind and forms an uneasy partnership."],
+["Code Geass",8.4,50,2006,"TV","Action|Drama|Mecha|Psychological|Sci-Fi","Sunrise","A dispossessed prince gains the power of absolute obedience and leads a rebellion against an empire."],
+["To Your Eternity",8.4,20,2021,"TV","Drama|Fantasy","Brain's Base","An immortal being takes human form and learns what it means to live through the people it meets."],
+["The Promised Neverland",8.4,24,2019,"TV","Drama|Horror|Mystery|Psychological|Thriller","CloverWorks","Children at an idyllic orphanage discover the terrible truth about the house and plan an escape."],
+["Sword Art Online",8.4,25,2012,"TV","Action|Adventure|Romance|Sci-Fi","A-1 Pictures","Players trapped in a death-game VRMMO must clear the game to escape, with real death at stake."],
+["Erased",8.4,12,2016,"TV","Drama|Mystery|Psychological|Supernatural|Thriller","A-1 Pictures","A man who can rewind time returns to his childhood to prevent a series of abductions."],
+["Clannad After Story",8.4,24,2008,"TV","Drama|Romance|Slice of Life|Supernatural","Kyoto Animation","The story continues into adulthood, where family, loss and memory shape the road ahead."],
+["Clannad",8.3,24,2007,"TV","Drama|Romance|Slice of Life|Supernatural","Kyoto Animation","A delinquent student befriends a quiet girl and slowly finds a place in her unusual family."],
+["Naruto",8.3,220,2002,"TV","Action|Adventure|Fantasy","Studio Pierrot","An orphaned ninja with a sealed demon inside him trains to become the village's strongest ninja."],
+["Naruto Shippuden",8.3,500,2007,"TV","Action|Adventure|Fantasy","Studio Pierrot","The story continues as Naruto matures into a powerful shinobi caught in a world-scale war."],
+["Dragon Ball Z",8.3,291,1989,"TV","Action|Adventure|Fantasy|Martial Arts","Toei Animation","Goku and his allies defend Earth from increasingly powerful extraterrestrial threats."],
+["Angel Beats!",8.3,13,2010,"TV","Comedy|Drama|Supernatural","Key","Dead students in a strange afterlife school fight to resolve the regrets that keep them there."],
+["Komi Can't Communicate",8.2,24,2021,"TV","Comedy|Slice of Life","OLM","A girl who cannot speak to anyone sets a goal of making one hundred friends."],
+["One Punch Man",8.9,24,2015,"TV","Action|Comedy|Sci-Fi","J.C.Staff","A hero who can defeat any enemy with one punch searches for a challenge worthy of him."],
+["Fumetsu no Anata e",8.4,20,2021,"TV","Drama|Fantasy","Brain's Base","An immortal being takes human form and learns what it means to live through the people it meets."],
+["The Melancholy of Haruhi Suzumiya",8.3,28,2006,"TV","Comedy|Mystery|Sci-Fi","Kyoto Animation","A girl who unknowingly warps reality recruits a club of students to investigate the paranormal."],
+["Fullmetal Alchemist",8.3,51,2003,"TV","Action|Adventure|Drama|Fantasy","Bones","An alternate telling of the Elric brothers' search for the Philosopher's Stone."],
+["Cipher Academy",8.0,12,2024,"TV","Comedy|Mystery","Satelight","A genius detective who can read a person's true nature from their carefully chosen name."]
+];
+
+const CATALOG = RAW.map((r,i)=>({id:i+1,title:r[0],score:r[1],episodes:r[2],year:r[3],type:r[4],genres:r[5].split("|"),studio:r[6],synopsis:r[7],popularity: Math.round(1000 - i*7 + (r[1]-8)*300)}));
+const GENRES = [...new Set(CATALOG.flatMap(a=>a.genres))].sort();
+const STORE_KEY="kori_watchlist_v1";
+const STATUSES=["Watching","Completed","Plan to Watch","On Hold","Dropped"];
+const PALETTES=[["#ff4d8d","#7b2ff7"],["#a56bff","#4361ee"],["#ffc857","#ff5e5b"],["#00c2a8","#0077b6"],["#f72585","#7209b7"],["#ff922b","#e64980"],["#4cc9f0","#4361ee"],["#80ed99","#38a3a5"]];
+
+const el={
+  brand:document.getElementById("brandBtn"),searchForm:document.getElementById("searchForm"),searchInput:document.getElementById("searchInput"),searchClear:document.getElementById("searchClear"),
+  navBtns:[...document.querySelectorAll(".nav-btn")],heroArt:document.getElementById("heroArt"),heroTitle:document.getElementById("heroTitle"),heroSynopsis:document.getElementById("heroSynopsis"),heroMeta:document.getElementById("heroMeta"),
+  heroDetails:document.getElementById("heroDetails"),heroList:document.getElementById("heroList"),heroShuffle:document.getElementById("heroShuffle"),
+  sectionTitle:document.getElementById("sectionTitle"),sectionSubtitle:document.getElementById("sectionSubtitle"),viewToggle:document.getElementById("viewToggle"),sortBtns:[...document.querySelectorAll(".sort-btn")],
+  genreChips:document.getElementById("genreChips"),cardGrid:document.getElementById("cardGrid"),empty:document.getElementById("emptyState"),emptyMessage:document.getElementById("emptyMessage"),
+  listCount:document.getElementById("listCount"),modalBackdrop:document.getElementById("modalBackdrop"),modalBody:document.getElementById("modalBody"),modalClose:document.getElementById("modalClose")
+};
+
+const state={view:"home",query:"",sort:"score",genre:"All",hero:CATALOG[0],watchlist:load()};
+function load(){try{const r=localStorage.getItem(STORE_KEY);const p=r?JSON.parse(r):[];return Array.isArray(p)?p:[]}catch(e){return[]}}
+function save(){try{localStorage.setItem(STORE_KEY,JSON.stringify(state.watchlist))}catch(e){}el.listCount.textContent=String(state.watchlist.length)}
+function inList(id){return state.watchlist.some(a=>a.id===id)}
+function add(a){if(inList(a.id))return;state.watchlist.unshift({id:a.id,status:"Plan to Watch",addedAt:Date.now()});save()}
+function remove(id){state.watchlist=state.watchlist.filter(a=>a.id!==id);save()}
+function setStatus(id,s){const e=state.watchlist.find(a=>a.id===id);if(e){e.status=s;save()}}
+function byId(id){return CATALOG.find(a=>a.id===id)}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)}
+
+/* Deterministic local poster art — no external image can fail to load. */
+function poster(a,w=300,h=400){
+  const p=PALETTES[hash(a.title)%PALETTES.length];
+  const initials=a.title.replace(/[^A-Za-z0-9 ]/g,"").split(" ").filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase()||"K";
+  const safe=esc(a.title.length>28?a.title.slice(0,27)+"…":a.title);
+  const lines=a.title.match(/.{1,20}(\s|$)/g)?.slice(0,3).map(x=>esc(x.trim()))||[safe];
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${p[0]}"/><stop offset="1" stop-color="${p[1]}"/></linearGradient></defs>
+  <rect width="${w}" height="${h}" fill="#13111d"/>
+  <rect width="${w}" height="${h}" fill="url(#g)" opacity=".82"/>
+  <circle cx="${w*0.78}" cy="${h*0.2}" r="${w*0.34}" fill="#fff" opacity=".07"/>
+  <circle cx="${w*0.2}" cy="${h*0.62}" r="${w*0.28}" fill="#000" opacity=".1"/>
+  <path d="M0 ${h*0.72} L${w} ${h*0.55} L${w} ${h} L0 ${h} Z" fill="#0c0b12" opacity=".35"/>
+  <text x="24" y="${h*0.5}" font-family="Segoe UI,Arial" font-size="${w*0.42}" font-weight="800" fill="#fff" opacity=".92">${initials}</text>
+  <text x="24" y="${h*0.84}" font-family="Segoe UI,Arial" font-size="17" font-weight="700" fill="#fff">${lines[0]}</text>
+  ${lines[1]?`<text x="24" y="${h*0.89}" font-family="Segoe UI,Arial" font-size="17" font-weight="700" fill="#fff">${lines[1]}</text>`:""}
+  ${lines[2]?`<text x="24" y="${h*0.94}" font-family="Segoe UI,Arial" font-size="17" font-weight="700" fill="#fff">${lines[2]}</text>`:""}
+  </svg>`;
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+}
+
+function renderChips(){el.genreChips.innerHTML=["All",...GENRES].map(g=>`<button class="chip ${g===state.genre?"active":""}" data-genre="${esc(g)}">${esc(g)}</button>`).join("")}
+
+function visible(){
+  let list=CATALOG.slice();
+  if(state.view==="mylist"){list=state.watchlist.map(e=>byId(e.id)).filter(Boolean);return list}
+  if(state.view==="search"){const q=state.query.toLowerCase();list=list.filter(a=>a.title.toLowerCase().includes(q)||a.genres.some(g=>g.toLowerCase().includes(q))||a.studio.toLowerCase().includes(q))}
+  if(state.genre!=="All")list=list.filter(a=>a.genres.includes(state.genre));
+  const key=state.view==="search"?"score":state.sort;
+  list.sort((a,b)=>key==="year"?b.year-a.year:key==="popular"?a.popularity-b.popularity:b.score-a.score);
+  return list;
+}
+
+function render(){
+  const list=visible();
+  if(state.view==="mylist"){
+    el.sectionTitle.textContent="My List";
+    el.sectionSubtitle.textContent="Your personal watchlist — saved in this browser only.";
+    el.viewToggle.hidden=true;
+  }else if(state.view==="search"){
+    el.sectionTitle.textContent=`Results for “${state.query}”`;
+    el.sectionSubtitle.textContent=`${list.length} match${list.length===1?"":"es"} in the catalog.`;
+    el.viewToggle.hidden=true;
+  }else{
+    el.sectionTitle.textContent="Discover Anime";
+    el.sectionSubtitle.textContent=`${CATALOG.length} series and films. Filter by genre or sort however you like.`;
+    el.viewToggle.hidden=false;
+  }
+  el.genreChips.hidden=state.view==="mylist";
+  el.cardGrid.innerHTML=list.map(a=>{
+    const isList=state.view==="mylist";
+    const entry=state.watchlist.find(e=>e.id===a.id);
+    return `<article class="anime-card" data-id="${a.id}" tabindex="0" role="button" aria-label="View ${esc(a.title)}">
+      <div class="card-poster"><img src="${poster(a)}" alt="${esc(a.title)} art" loading="lazy"/>
+        <span class="card-score">★ ${a.score.toFixed(1)}</span>
+        ${isList?`<button class="card-remove" data-remove="${a.id}" aria-label="Remove from list">&times;</button>`:""}
+      </div>
+      <div class="card-body"><div class="card-title">${esc(a.title)}</div>
+        <div class="card-info"><span>${a.episodes===1?"Film":a.episodes+" eps"}</span><span>${esc(a.type)}</span><span>${a.year}</span></div>
+        ${isList?`<select class="status-select" data-status-id="${a.id}" aria-label="Watch status">${STATUSES.map(s=>`<option value="${s}" ${entry.status===s?"selected":""}>${s}</option>`).join("")}</select>`:""}
+      </div></article>`;
+  }).join("");
+  el.empty.hidden=list.length>0;
+  el.emptyMessage.textContent=state.view==="mylist"?"Open any anime and hit “Add to list” to start your watchlist.":state.view==="search"?"No matches. Try a shorter title or another genre.":"Nothing to show here.";
+  syncNav();
+}
+
+function syncNav(){el.navBtns.forEach(b=>b.classList.toggle("active",(b.dataset.view==="home"&&state.view==="home")||(b.dataset.view==="mylist"&&state.view==="mylist")))}
+
+function renderHero(){
+  const a=state.hero;
+  el.heroArt.style.backgroundImage=`url("${poster(a,1200,700)}")`;
+  el.heroTitle.textContent=a.title;
+  el.heroSynopsis.textContent=a.synopsis;
+  el.heroMeta.innerHTML=`<span>★ <strong>${a.score.toFixed(2)}</strong></span><span><strong>${a.episodes===1?"Film":a.episodes+" episodes"}</strong></span><span><strong>${esc(a.type)}</strong></span><span><strong>${a.year}</strong></span><span><strong>${esc(a.studio)}</strong></span>`;
+  const added=inList(a.id);
+  el.heroList.textContent=added?"✓ In your list":"+ Add to list";
+  el.heroList.classList.toggle("in-list",added);
+}
+
+function openDetail(id){
+  const a=byId(id);if(!a)return;
+  const added=inList(a.id);
+  const justwatch="https://www.justwatch.com/us/search?q="+encodeURIComponent(a.title);
+  const mal="https://myanimelist.net/search/all?q="+encodeURIComponent(a.title);
+  el.modalBody.innerHTML=`
+   <div class="modal-hero">
+     <div class="hero-art" style="background-image:url('${poster(a,1200,700)}')"></div>
+     <div class="hero-overlay"></div>
+     <div class="modal-hero-content"><h2 id="modalTitle">${esc(a.title)}</h2>
+       <div class="modal-actions">
+         <button class="btn btn-primary" id="modalListBtn" data-id="${a.id}">${added?"✓ In your list":"+ Add to list"}</button>
+         <a class="btn btn-ghost" href="${justwatch}" target="_blank" rel="noopener noreferrer">Where to watch ↗</a>
+         <a class="btn btn-ghost" href="${mal}" target="_blank" rel="noopener noreferrer">MAL page ↗</a>
+       </div>
+     </div>
+   </div>
+   <div class="modal-main">
+     <div class="modal-stats">
+       <div class="stat"><span class="stat-label">Score</span><span class="stat-value gold">${a.score.toFixed(2)}</span></div>
+       <div class="stat"><span class="stat-label">Episodes</span><span class="stat-value">${a.episodes===1?"Film":a.episodes}</span></div>
+       <div class="stat"><span class="stat-label">Year</span><span class="stat-value">${a.year}</span></div>
+       <div class="stat"><span class="stat-label">Type</span><span class="stat-value" style="font-size:14px">${esc(a.type)}</span></div>
+       <div class="stat"><span class="stat-label">Studio</span><span class="stat-value" style="font-size:14px">${esc(a.studio)}</span></div>
+     </div>
+     <div class="modal-section"><h3>Synopsis</h3><p class="synopsis-text">${esc(a.synopsis)}</p></div>
+     <div class="modal-section"><h3>Genres</h3><div class="genre-tags">${a.genres.map(g=>`<span class="genre-tag">${esc(g)}</span>`).join("")}</div></div>
+     <div class="modal-section"><h3>Where to watch legally</h3>
+       <div class="stream-list"><a class="stream-link" href="${justwatch}" target="_blank" rel="noopener noreferrer"><span class="stream-dot"></span>Find a legal stream on JustWatch ↗</a>
+       <a class="stream-link" href="${mal}" target="_blank" rel="noopener noreferrer"><span class="stream-dot"></span>Streaming info on MyAnimeList ↗</a></div>
+       <p class="footer-note" style="margin-top:10px">Availability varies by country. Kōri does not host or stream video.</p>
+     </div>
+   </div>`;
+  el.modalBackdrop.hidden=false;document.body.style.overflow="hidden";
+  document.getElementById("modalListBtn").addEventListener("click",e=>{
+    if(inList(a.id)){remove(a.id);e.currentTarget.textContent="+ Add to list";e.currentTarget.classList.remove("in-list")}
+    else{add(a);e.currentTarget.textContent="✓ In your list";e.currentTarget.classList.add("in-list")}
+    renderHero();if(state.view==="mylist")render();
+  });
+}
+function closeModal(){el.modalBackdrop.hidden=true;document.body.style.overflow="";el.modalBody.innerHTML=""}
+
+function setView(v){state.view=v;state.query="";state.genre="All";el.searchInput.value="";el.searchClear.hidden=true;render();window.scrollTo({top:0,behavior:"smooth"})}
+
+el.navBtns.forEach(b=>b.addEventListener("click",()=>{
+  if(b.dataset.view==="random"){const a=CATALOG[Math.floor(Math.random()*CATALOG.length)];state.hero=a;renderHero();setView("home");window.scrollTo({top:0,behavior:"smooth"});return}
+  setView(b.dataset.view);
+}));
+el.brand.addEventListener("click",()=>setView("home"));
+el.searchForm.addEventListener("submit",e=>{
+  e.preventDefault();const q=el.searchInput.value.trim();if(!q)return;
+  state.view="search";state.query=q;state.genre="All";el.searchClear.hidden=false;render();
+});
+let t;el.searchInput.addEventListener("input",()=>{
+  el.searchClear.hidden=!el.searchInput.value;clearTimeout(t);
+  t=setTimeout(()=>{const q=el.searchInput.value.trim();if(q)el.searchForm.requestSubmit();else if(state.view==="search")setView("home")},350);
+});
+el.searchClear.addEventListener("click",()=>{el.searchInput.value="";el.searchClear.hidden=true;setView("home")});
+el.sortBtns.forEach(b=>b.addEventListener("click",()=>{
+  el.sortBtns.forEach(x=>x.classList.remove("active"));b.classList.add("active");
+  state.sort=b.dataset.sort;state.view="home";render();
+}));
+el.genreChips.addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;state.genre=c.dataset.genre;if(state.view==="mylist")state.view="home";render()});
+el.heroDetails.addEventListener("click",()=>openDetail(state.hero.id));
+el.heroList.addEventListener("click",()=>{if(inList(state.hero.id))remove(state.hero.id);else add(state.hero);renderHero();if(state.view==="mylist")render()});
+el.heroShuffle.addEventListener("click",()=>{const a=CATALOG[Math.floor(Math.random()*CATALOG.length)];state.hero=a;renderHero()});
+el.cardGrid.addEventListener("click",e=>{
+  const rm=e.target.closest("[data-remove]");
+  if(rm){e.stopPropagation();remove(Number(rm.dataset.remove));render();return}
+  if(e.target.closest(".status-select"))return;
+  const c=e.target.closest(".anime-card");if(c)openDetail(Number(c.dataset.id));
+});
+el.cardGrid.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("anime-card")){e.preventDefault();openDetail(Number(e.target.dataset.id))}});
+el.cardGrid.addEventListener("change",e=>{const s=e.target.closest("[data-status-id]");if(s)setStatus(Number(s.dataset.statusId),s.value)});
+el.modalClose.addEventListener("click",closeModal);
+el.modalBackdrop.addEventListener("click",e=>{if(e.target===el.modalBackdrop)closeModal()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!el.modalBackdrop.hidden)closeModal()});
+
+el.listCount.textContent=String(state.watchlist.length);
+renderChips();renderHero();render();
+</script>
+</body>
+</html>
