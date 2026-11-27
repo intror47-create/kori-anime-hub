@@ -104,6 +104,13 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
 .stream-link{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--line);padding:9px 14px;border-radius:10px;color:var(--text);font-size:13px;font-weight:600}
 .stream-link:hover{border-color:var(--accent2);text-decoration:none}
 .stream-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2)}
+/* ---------- Free legal streams ---------- */
+.free-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:9px;color:var(--text);text-decoration:none;transition:transform .2s,border-color .2s}
+.free-card:hover{transform:translateY(-3px);border-color:var(--accent);text-decoration:none}
+.free-card h3{margin:0;font-size:16px}
+.free-card p{margin:0;color:var(--muted);font-size:13px;flex:1}
+.free-card span{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.06em}
+
 /* ---------- Watch view ---------- */
 .watch-section{max-width:1100px}
 #watchFrame{position:relative;width:100%;aspect-ratio:16/9;background:#000}
@@ -159,6 +166,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
       <button class="nav-btn" data-view="random">Random</button>
       <button class="nav-btn" data-view="mylist">My List <span class="list-count" id="listCount">0</span></button>
       <button class="nav-btn" data-view="videos">My Videos</button>
+      <button class="nav-btn" data-view="free">Free Streams</button>
     </nav>
   </div>
 </header>
@@ -217,6 +225,14 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
       <h3 class="playlist-title">Playlist</h3>
       <div class="playlist" id="playlist"></div>
     </div>
+  </section>
+
+  <section class="content-section" id="freeSection" hidden>
+    <div class="section-heading">
+      <div><h2>Free &amp; Legal Anime Streams</h2><p>Services that carry anime at no cost, supported by ads. Availability depends on your country.</p></div>
+    </div>
+    <div class="card-grid" id="freeGrid"></div>
+    <p class="watch-note">Source: <a href="https://en.wikipedia.org/wiki/List_of_streaming_media_services#Free_ad-supported_television_(FAST)" target="_blank" rel="noopener noreferrer">Wikipedia — list of streaming media services</a>. Kōri links out; it does not host or stream video.</p>
   </section>
 
   <section class="content-section watch-section" id="watchSection" hidden>
@@ -307,6 +323,16 @@ const RAW = [
 ];
 
 const CATALOG = RAW.map((r,i)=>({id:i+1,title:r[0],score:r[1],episodes:r[2],year:r[3],type:r[4],genres:r[5].split("|"),studio:r[6],synopsis:r[7],popularity: Math.round(1000 - i*7 + (r[1]-8)*300)}));
+const FREE_SERVICES = [
+  {name:"Crunchyroll",url:"https://www.crunchyroll.com/",note:"The largest licensed anime catalog. Free ad-supported tier plus premium."},
+  {name:"Tubi",url:"https://tubitv.com/anime",note:"Free with ads. Dedicated anime section, no account needed."},
+  {name:"RetroCrush",url:"https://www.retrocrush.tv/",note:"Free ad-supported classic and retrospective anime."},
+  {name:"Pluto TV",url:"https://pluto.tv/",note:"Free live channels, including anime programming."},
+  {name:"YouTube",url:"https://www.youtube.com/",note:"Official studio channels publish trailers and some full episodes for free."},
+  {name:"Abema",url:"https://abema.tv/",note:"Japanese free ad-supported service with a large anime lineup."},
+  {name:"Plex",url:"https://watch.plex.tv/",note:"Free on-demand movies and shows, including anime titles."},
+  {name:"JustWatch",url:"https://www.justwatch.com/us/provider/crunchyroll",note:"Find exactly which legal service carries a title in your region."}
+];
 const GENRES = [...new Set(CATALOG.flatMap(a=>a.genres))].sort();
 const STORE_KEY="kori_watchlist_v1";
 const STATUSES=["Watching","Completed","Plan to Watch","On Hold","Dropped"];
@@ -324,7 +350,8 @@ const el={
   playerWrap:document.getElementById("playerWrap"),player:document.getElementById("player"),playerNow:document.getElementById("playerNow"),
   playlist:document.getElementById("playlist"),clearVideos:document.getElementById("clearVideos"),
   watchSection:document.getElementById("watchSection"),watchBack:document.getElementById("watchBack"),watchTitle:document.getElementById("watchTitle"),
-  watchSubtitle:document.getElementById("watchSubtitle"),watchFrame:document.getElementById("watchFrame"),watchNow:document.getElementById("watchNow"),watchActions:document.getElementById("watchActions")
+  watchSubtitle:document.getElementById("watchSubtitle"),watchFrame:document.getElementById("watchFrame"),watchNow:document.getElementById("watchNow"),watchActions:document.getElementById("watchActions"),
+  freeSection:document.getElementById("freeSection"),freeGrid:document.getElementById("freeGrid")
 };
 
 const state={view:"home",query:"",sort:"score",genre:"All",hero:CATALOG[0],watchlist:load()};
@@ -358,7 +385,7 @@ const videos={items:[],current:null};
 let pendingWatch=null;
 function watchAnime(a){
   state.view="watch";
-  el.browse.hidden=true;el.heroSection.hidden=true;el.videoSection.hidden=true;el.watchSection.hidden=false;
+  el.browse.hidden=true;el.heroSection.hidden=true;el.videoSection.hidden=true;el.watchSection.hidden=false;el.freeSection.hidden=true;
   const tid=TRAILERS[a.id];
   el.watchTitle.textContent=a.title;
   el.watchSubtitle.textContent=`${a.year} · ${a.type} · ${a.episodes===1?"Film":a.episodes+" episodes"} · ★ ${a.score.toFixed(2)}`;
@@ -438,6 +465,7 @@ function art(a){return POSTERS[a.id]||poster(a)}
 function heroArt(a){return POSTERS[a.id]||poster(a,600,800)}
 
 function renderChips(){el.genreChips.innerHTML=["All",...GENRES].map(g=>`<button class="chip ${g===state.genre?"active":""}" data-genre="${esc(g)}">${esc(g)}</button>`).join("")}
+function renderFree(){el.freeGrid.innerHTML=FREE_SERVICES.map(s=>`<a class="free-card" href="${s.url}" target="_blank" rel="noopener noreferrer"><span>FREE / LEGAL</span><h3>${esc(s.name)}</h3><p>${esc(s.note)}</p></a>`).join("")}
 
 function visible(){
   let list=CATALOG.slice();
@@ -450,7 +478,7 @@ function visible(){
 }
 
 function render(){
-  if(state.view==="videos"||state.view==="watch"){syncNav();return}
+  if(state.view==="videos"||state.view==="watch"||state.view==="free"){syncNav();return}
   const list=visible();
   if(state.view==="mylist"){
     el.sectionTitle.textContent="My List";
@@ -545,7 +573,7 @@ function closeModal(){el.modalBackdrop.hidden=true;document.body.style.overflow=
 function setView(v){
   state.view=v;state.query="";state.genre="All";el.searchInput.value="";el.searchClear.hidden=true;
   const isVideos=v==="videos";
-  el.browse.hidden=isVideos;el.heroSection.hidden=isVideos;el.videoSection.hidden=!isVideos;el.watchSection.hidden=true;
+  el.browse.hidden=isVideos;el.heroSection.hidden=isVideos;el.videoSection.hidden=!isVideos;el.watchSection.hidden=true;el.freeSection.hidden=v!=="free";
   render();window.scrollTo({top:0,behavior:"smooth"});
 }
 
@@ -629,7 +657,7 @@ el.clearVideos.addEventListener("click",async()=>{
 });
 
 el.listCount.textContent=String(state.watchlist.length);
-renderChips();renderHero();render();loadVideos();
+renderChips();renderFree();renderHero();render();loadVideos();
 </script>
 </body>
 </html>
