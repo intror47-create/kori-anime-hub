@@ -104,6 +104,13 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
 .stream-link{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--line);padding:9px 14px;border-radius:10px;color:var(--text);font-size:13px;font-weight:600}
 .stream-link:hover{border-color:var(--accent2);text-decoration:none}
 .stream-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2)}
+/* ---------- Watch view ---------- */
+.watch-section{max-width:1100px}
+#watchFrame{position:relative;width:100%;aspect-ratio:16/9;background:#000}
+#watchFrame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.watch-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.watch-note{color:var(--muted);font-size:12px;margin-top:16px;max-width:760px}
+
 /* ---------- Local video player ---------- */
 .video-section{max-width:1100px}
 .drop-zone{border:2px dashed var(--line);border-radius:18px;background:var(--surface);padding:54px 24px;text-align:center;transition:border-color .2s,background .2s}
@@ -211,6 +218,19 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
       <div class="playlist" id="playlist"></div>
     </div>
   </section>
+
+  <section class="content-section watch-section" id="watchSection" hidden>
+    <button class="btn btn-ghost" id="watchBack">&larr; Back to browse</button>
+    <div class="section-heading" style="margin-top:20px">
+      <div><h2 id="watchTitle">Watch</h2><p id="watchSubtitle">Official trailer, played right here.</p></div>
+    </div>
+    <div class="player-shell">
+      <div id="watchFrame"></div>
+      <div class="player-now" id="watchNow"></div>
+    </div>
+    <div class="watch-actions" id="watchActions"></div>
+    <p class="watch-note">This is an official trailer. Full episodes are available through the licensed services linked above — Kōri does not host episode video.</p>
+  </section>
 </main>
 
 <footer class="site-footer">
@@ -226,6 +246,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
 </div>
 
 <script src="posters.js"></script>
+<script src="trailers.js"></script>
 <script>
 /* Kori catalog — curated metadata. Tuple: [title, score, episodes, year, type, genres(csv), studio, synopsis] */
 const RAW = [
@@ -301,7 +322,9 @@ const el={
   browse:document.getElementById("browseSection"),heroSection:document.getElementById("hero"),videoSection:document.getElementById("videoSection"),
   dropZone:document.getElementById("dropZone"),pickVideos:document.getElementById("pickVideos"),videoFiles:document.getElementById("videoFiles"),
   playerWrap:document.getElementById("playerWrap"),player:document.getElementById("player"),playerNow:document.getElementById("playerNow"),
-  playlist:document.getElementById("playlist"),clearVideos:document.getElementById("clearVideos")
+  playlist:document.getElementById("playlist"),clearVideos:document.getElementById("clearVideos"),
+  watchSection:document.getElementById("watchSection"),watchBack:document.getElementById("watchBack"),watchTitle:document.getElementById("watchTitle"),
+  watchSubtitle:document.getElementById("watchSubtitle"),watchFrame:document.getElementById("watchFrame"),watchNow:document.getElementById("watchNow"),watchActions:document.getElementById("watchActions")
 };
 
 const state={view:"home",query:"",sort:"score",genre:"All",hero:CATALOG[0],watchlist:load()};
@@ -333,7 +356,22 @@ async function dbClear(){const db=await openDB();return new Promise((res,rej)=>{
 
 const videos={items:[],current:null};
 let pendingWatch=null;
-function watchAnime(a){pendingWatch={title:a.title};el.videoFiles.click()}
+function watchAnime(a){
+  state.view="watch";
+  el.browse.hidden=true;el.heroSection.hidden=true;el.videoSection.hidden=true;el.watchSection.hidden=false;
+  const tid=TRAILERS[a.id];
+  el.watchTitle.textContent=a.title;
+  el.watchSubtitle.textContent=`${a.year} · ${a.type} · ${a.episodes===1?"Film":a.episodes+" episodes"} · ★ ${a.score.toFixed(2)}`;
+  el.watchFrame.innerHTML=tid
+    ? `<iframe src="https://www.youtube-nocookie.com/embed/${tid}?autoplay=1&rel=0" title="${esc(a.title)} official trailer" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+    : `<div class="state-block"><div class="empty-icon">▶</div><h3>No official trailer in the archive</h3><p>Play your own file for this title below.</p></div>`;
+  el.watchNow.textContent=tid?`Official trailer — ${a.title}`:a.title;
+  el.watchActions.innerHTML=`
+    <button class="btn btn-primary" id="watchOwnBtn">▶ Play my own file</button>
+    <a class="btn btn-ghost" href="https://www.justwatch.com/us/search?q=${encodeURIComponent(a.title)}" target="_blank" rel="noopener noreferrer">Where to watch legally ↗</a>`;
+  document.getElementById("watchOwnBtn").addEventListener("click",()=>{pendingWatch={title:a.title};el.videoFiles.click()});
+  syncNav();window.scrollTo({top:0,behavior:"smooth"});
+}
 function fmtSize(b){if(!b)return"";return b>1073741824?(b/1073741824).toFixed(1)+" GB":b>1048576?(b/1048576).toFixed(0)+" MB":(b/1024).toFixed(0)+" KB"}
 function renderVideos(){
   el.playlist.innerHTML=videos.items.map((v,i)=>`<div class="play-item ${v.id===videos.current?"active":""}" data-play="${v.id}">
@@ -412,7 +450,7 @@ function visible(){
 }
 
 function render(){
-  if(state.view==="videos"){syncNav();return}
+  if(state.view==="videos"||state.view==="watch"){syncNav();return}
   const list=visible();
   if(state.view==="mylist"){
     el.sectionTitle.textContent="My List";
@@ -507,7 +545,7 @@ function closeModal(){el.modalBackdrop.hidden=true;document.body.style.overflow=
 function setView(v){
   state.view=v;state.query="";state.genre="All";el.searchInput.value="";el.searchClear.hidden=true;
   const isVideos=v==="videos";
-  el.browse.hidden=isVideos;el.heroSection.hidden=isVideos;el.videoSection.hidden=!isVideos;
+  el.browse.hidden=isVideos;el.heroSection.hidden=isVideos;el.videoSection.hidden=!isVideos;el.watchSection.hidden=true;
   render();window.scrollTo({top:0,behavior:"smooth"});
 }
 
@@ -556,6 +594,7 @@ document.addEventListener("error",e=>{
 },true);
 
 /* video library events */
+el.watchBack.addEventListener("click",()=>setView("home"));
 el.pickVideos.addEventListener("click",()=>el.videoFiles.click());
 el.videoFiles.addEventListener("change",()=>{addFiles([...el.videoFiles.files]);el.videoFiles.value=""});
 el.dropZone.addEventListener("dragover",e=>{e.preventDefault();el.dropZone.classList.add("drag")});
