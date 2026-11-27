@@ -321,7 +321,7 @@ function render(){
     const isList=state.view==="mylist";
     const entry=state.watchlist.find(e=>e.id===a.id);
     return `<article class="anime-card" data-id="${a.id}" tabindex="0" role="button" aria-label="View ${esc(a.title)}">
-      <div class="card-poster"><img src="${art(a)}" data-fallback="${poster(a)}" alt="${esc(a.title)} cover" loading="lazy"/>
+      <div class="card-poster"><img src="${art(a)}" data-fallback="${poster(a)}" alt="${esc(a.title)} cover" decoding="async"/>
         <span class="card-score">★ ${a.score.toFixed(1)}</span>
         ${isList?`<button class="card-remove" data-remove="${a.id}" aria-label="Remove from list">&times;</button>`:""}
       </div>
