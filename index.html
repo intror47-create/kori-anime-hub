@@ -71,6 +71,8 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
 .card-poster img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
 .anime-card:hover .card-poster img{transform:scale(1.06)}
 .card-score{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:4px;background:rgba(12,11,18,.85);backdrop-filter:blur(6px);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:800;color:var(--gold)}
+.card-watch{position:absolute;bottom:10px;left:10px;z-index:2;border:0;border-radius:8px;padding:6px 11px;background:linear-gradient(135deg,var(--accent),#e6397e);color:#fff;font-size:12px;font-weight:800;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.card-watch:hover{filter:brightness(1.12)}
 .card-remove{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:8px;border:0;background:rgba(12,11,18,.85);color:var(--text);font-size:18px;line-height:1;display:grid;place-items:center;opacity:0;transition:opacity .2s}
 .anime-card:hover .card-remove{opacity:1}.card-remove:hover{background:var(--accent)}
 .card-body{padding:12px 13px 14px;flex:1;display:flex;flex-direction:column}
@@ -165,6 +167,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
       <div class="hero-actions">
         <button class="btn btn-primary" id="heroDetails">View details</button>
         <button class="btn btn-ghost" id="heroList">+ Add to list</button>
+        <button class="btn btn-ghost" id="heroWatch">▶ Watch</button>
         <button class="btn btn-ghost" id="heroShuffle">Surprise me</button>
       </div>
       <div class="hero-meta" id="heroMeta"></div>
@@ -194,7 +197,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
     <div class="drop-zone" id="dropZone">
       <div class="drop-icon">▶</div>
       <h3>Drop your video files here</h3>
-      <p>MP4, MKV, WebM, AVI — or click to browse. Files stay on this device.</p>
+      <p>MP4, MKV, WebM, AVI — or click to browse. Files stay on this device. Tip: hit <strong>Watch</strong> on any anime card to attach one of your own files to that title.</p>
       <button class="btn btn-primary" id="pickVideos">Choose videos</button>
       <input type="file" id="videoFiles" accept="video/*" multiple hidden />
     </div>
@@ -291,7 +294,7 @@ const PALETTES=[["#ff4d8d","#7b2ff7"],["#a56bff","#4361ee"],["#ffc857","#ff5e5b"
 const el={
   brand:document.getElementById("brandBtn"),searchForm:document.getElementById("searchForm"),searchInput:document.getElementById("searchInput"),searchClear:document.getElementById("searchClear"),
   navBtns:[...document.querySelectorAll(".nav-btn")],heroArt:document.getElementById("heroArt"),heroTitle:document.getElementById("heroTitle"),heroSynopsis:document.getElementById("heroSynopsis"),heroMeta:document.getElementById("heroMeta"),
-  heroDetails:document.getElementById("heroDetails"),heroList:document.getElementById("heroList"),heroShuffle:document.getElementById("heroShuffle"),
+  heroDetails:document.getElementById("heroDetails"),heroList:document.getElementById("heroList"),heroWatch:document.getElementById("heroWatch"),heroShuffle:document.getElementById("heroShuffle"),
   sectionTitle:document.getElementById("sectionTitle"),sectionSubtitle:document.getElementById("sectionSubtitle"),viewToggle:document.getElementById("viewToggle"),sortBtns:[...document.querySelectorAll(".sort-btn")],
   genreChips:document.getElementById("genreChips"),cardGrid:document.getElementById("cardGrid"),empty:document.getElementById("emptyState"),emptyMessage:document.getElementById("emptyMessage"),
   listCount:document.getElementById("listCount"),modalBackdrop:document.getElementById("modalBackdrop"),modalBody:document.getElementById("modalBody"),modalClose:document.getElementById("modalClose"),
@@ -329,6 +332,8 @@ async function dbDel(id){const db=await openDB();return new Promise((res,rej)=>{
 async function dbClear(){const db=await openDB();return new Promise((res,rej)=>{const r=db.transaction("files","readwrite").objectStore("files").clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
 
 const videos={items:[],current:null};
+let pendingWatch=null;
+function watchAnime(a){pendingWatch={title:a.title};el.videoFiles.click()}
 function fmtSize(b){if(!b)return"";return b>1073741824?(b/1073741824).toFixed(1)+" GB":b>1048576?(b/1048576).toFixed(0)+" MB":(b/1024).toFixed(0)+" KB"}
 function renderVideos(){
   el.playlist.innerHTML=videos.items.map((v,i)=>`<div class="play-item ${v.id===videos.current?"active":""}" data-play="${v.id}">
@@ -343,12 +348,20 @@ function playVideo(id){
   videos.current=id;el.player.src=v.url;el.player.play().catch(()=>{});renderVideos();
 }
 async function addFiles(list){
-  let added=0;
+  let added=0,lastId=null;
+  const pw=pendingWatch;pendingWatch=null;
   for(const f of list){
     if(!f.type.startsWith("video/")&&!/\.(mp4|mkv|webm|avi|mov|m4v)$/i.test(f.name))continue;
-    try{const id=await dbPut(f);videos.items.push({id,name:f.name,size:f.size,url:URL.createObjectURL(f)});added++}catch(e){}
+    try{
+      const id=await dbPut(f);
+      const name=pw?pw.title+" · "+f.name:f.name;
+      videos.items.push({id,name,size:f.size,url:URL.createObjectURL(f)});
+      lastId=id;added++;
+    }catch(e){}
   }
-  if(added&&videos.current===null)playVideo(videos.items[0].id);else renderVideos();
+  if(pw&&added){setView("videos");playVideo(lastId)}
+  else if(added&&videos.current===null)playVideo(videos.items[0].id);
+  else renderVideos();
 }
 async function loadVideos(){
   try{
@@ -421,6 +434,7 @@ function render(){
     return `<article class="anime-card" data-id="${a.id}" tabindex="0" role="button" aria-label="View ${esc(a.title)}">
       <div class="card-poster"><img src="${art(a)}" data-fallback="${poster(a)}" alt="${esc(a.title)} cover" decoding="async"/>
         <span class="card-score">★ ${a.score.toFixed(1)}</span>
+        <button class="card-watch" data-watch="${a.id}" aria-label="Watch ${esc(a.title)} from your own files">▶ Watch</button>
         ${isList?`<button class="card-remove" data-remove="${a.id}" aria-label="Remove from list">&times;</button>`:""}
       </div>
       <div class="card-body"><div class="card-title">${esc(a.title)}</div>
@@ -458,6 +472,7 @@ function openDetail(id){
      <div class="modal-hero-content"><h2 id="modalTitle">${esc(a.title)}</h2>
        <div class="modal-actions">
          <button class="btn btn-primary" id="modalListBtn" data-id="${a.id}">${added?"✓ In your list":"+ Add to list"}</button>
+         <button class="btn btn-ghost" id="modalWatchBtn">▶ Watch</button>
          <a class="btn btn-ghost" href="${justwatch}" target="_blank" rel="noopener noreferrer">Where to watch ↗</a>
          <a class="btn btn-ghost" href="${mal}" target="_blank" rel="noopener noreferrer">MAL page ↗</a>
        </div>
@@ -485,6 +500,7 @@ function openDetail(id){
     else{add(a);e.currentTarget.textContent="✓ In your list";e.currentTarget.classList.add("in-list")}
     renderHero();if(state.view==="mylist")render();
   });
+  document.getElementById("modalWatchBtn").addEventListener("click",()=>{closeModal();watchAnime(a)});
 }
 function closeModal(){el.modalBackdrop.hidden=true;document.body.style.overflow="";el.modalBody.innerHTML=""}
 
@@ -516,8 +532,11 @@ el.sortBtns.forEach(b=>b.addEventListener("click",()=>{
 el.genreChips.addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;state.genre=c.dataset.genre;if(state.view==="mylist")state.view="home";render()});
 el.heroDetails.addEventListener("click",()=>openDetail(state.hero.id));
 el.heroList.addEventListener("click",()=>{if(inList(state.hero.id))remove(state.hero.id);else add(state.hero);renderHero();if(state.view==="mylist")render()});
+el.heroWatch.addEventListener("click",()=>watchAnime(state.hero));
 el.heroShuffle.addEventListener("click",()=>{const a=CATALOG[Math.floor(Math.random()*CATALOG.length)];state.hero=a;renderHero()});
 el.cardGrid.addEventListener("click",e=>{
+  const watch=e.target.closest("[data-watch]");
+  if(watch){e.stopPropagation();watchAnime(byId(Number(watch.dataset.watch)));return}
   const rm=e.target.closest("[data-remove]");
   if(rm){e.stopPropagation();remove(Number(rm.dataset.remove));render();return}
   if(e.target.closest(".status-select"))return;
