@@ -235,8 +235,7 @@ const RAW = [
 ["One Punch Man",8.9,24,2015,"TV","Action|Comedy|Sci-Fi","J.C.Staff","A hero who can defeat any enemy with one punch searches for a challenge worthy of him."],
 ["Fumetsu no Anata e",8.4,20,2021,"TV","Drama|Fantasy","Brain's Base","An immortal being takes human form and learns what it means to live through the people it meets."],
 ["The Melancholy of Haruhi Suzumiya",8.3,28,2006,"TV","Comedy|Mystery|Sci-Fi","Kyoto Animation","A girl who unknowingly warps reality recruits a club of students to investigate the paranormal."],
-["Fullmetal Alchemist",8.3,51,2003,"TV","Action|Adventure|Drama|Fantasy","Bones","An alternate telling of the Elric brothers' search for the Philosopher's Stone."],
-["Cipher Academy",8.0,12,2024,"TV","Comedy|Mystery","Satelight","A genius detective who can read a person's true nature from their carefully chosen name."]
+["Fullmetal Alchemist",8.3,51,2003,"TV","Action|Adventure|Drama|Fantasy","Bones","An alternate telling of the Elric brothers' search for the Philosopher's Stone."]
 ];
 
 const CATALOG = RAW.map((r,i)=>({id:i+1,title:r[0],score:r[1],episodes:r[2],year:r[3],type:r[4],genres:r[5].split("|"),studio:r[6],synopsis:r[7],popularity: Math.round(1000 - i*7 + (r[1]-8)*300)}));
