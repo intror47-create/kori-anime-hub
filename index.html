@@ -14,6 +14,9 @@
   --radius:14px;--shadow:0 18px 50px rgba(0,0,0,.45);--header-h:70px;
 }
 *{box-sizing:border-box}html{scroll-behavior:smooth}
+/* Author display rules override the UA [hidden] rule — force it back. Without this the
+   modal backdrop stays displayed and its backdrop-filter blurs the whole page. */
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);text-decoration:none}a:hover{text-decoration:underline}img{display:block}
 .site-header{position:sticky;top:0;z-index:40;height:var(--header-h);background:rgba(12,11,18,.9);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
@@ -33,7 +36,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
 .nav-btn:hover{color:var(--text);background:var(--surface)}.nav-btn.active{color:var(--text);background:var(--surface2)}
 .list-count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:800}
 .hero{position:relative;min-height:440px;display:flex;align-items:flex-end;padding:56px 24px 48px;overflow:hidden;background:var(--bg2);isolation:isolate}
-.hero-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:center;opacity:.85}
+.hero-art{position:absolute;inset:0;z-index:-2;background-color:#1a1726;background-repeat:no-repeat;background-size:auto 130%;background-position:right center;opacity:.92}
 .hero-overlay{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(12,11,18,.97) 0%,rgba(12,11,18,.75) 45%,rgba(12,11,18,.2) 100%),linear-gradient(0deg,var(--bg) 0%,rgba(12,11,18,0) 60%)}
 .hero-content{max-width:1280px;width:100%;margin:0 auto}
 .hero-kicker{margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:.24em;color:var(--accent)}
@@ -175,6 +178,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:var(--accent2);te
   </div>
 </div>
 
+<script src="posters.js"></script>
 <script>
 /* Kori catalog — curated metadata. Tuple: [title, score, episodes, year, type, genres(csv), studio, synopsis] */
 const RAW = [
@@ -282,6 +286,10 @@ function poster(a,w=300,h=400){
   return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
 }
 
+/* Real cover art when the image is present locally; generated art as fallback. */
+function art(a){return POSTERS[a.id]||poster(a)}
+function heroArt(a){return POSTERS[a.id]||poster(a,600,800)}
+
 function renderChips(){el.genreChips.innerHTML=["All",...GENRES].map(g=>`<button class="chip ${g===state.genre?"active":""}" data-genre="${esc(g)}">${esc(g)}</button>`).join("")}
 
 function visible(){
@@ -314,7 +322,7 @@ function render(){
     const isList=state.view==="mylist";
     const entry=state.watchlist.find(e=>e.id===a.id);
     return `<article class="anime-card" data-id="${a.id}" tabindex="0" role="button" aria-label="View ${esc(a.title)}">
-      <div class="card-poster"><img src="${poster(a)}" alt="${esc(a.title)} art" loading="lazy"/>
+      <div class="card-poster"><img src="${art(a)}" data-fallback="${poster(a)}" alt="${esc(a.title)} cover" loading="lazy"/>
         <span class="card-score">★ ${a.score.toFixed(1)}</span>
         ${isList?`<button class="card-remove" data-remove="${a.id}" aria-label="Remove from list">&times;</button>`:""}
       </div>
@@ -332,7 +340,7 @@ function syncNav(){el.navBtns.forEach(b=>b.classList.toggle("active",(b.dataset.
 
 function renderHero(){
   const a=state.hero;
-  el.heroArt.style.backgroundImage=`url("${poster(a,1200,700)}")`;
+  el.heroArt.style.backgroundImage=`url("${heroArt(a)}")`;
   el.heroTitle.textContent=a.title;
   el.heroSynopsis.textContent=a.synopsis;
   el.heroMeta.innerHTML=`<span>★ <strong>${a.score.toFixed(2)}</strong></span><span><strong>${a.episodes===1?"Film":a.episodes+" episodes"}</strong></span><span><strong>${esc(a.type)}</strong></span><span><strong>${a.year}</strong></span><span><strong>${esc(a.studio)}</strong></span>`;
@@ -348,7 +356,7 @@ function openDetail(id){
   const mal="https://myanimelist.net/search/all?q="+encodeURIComponent(a.title);
   el.modalBody.innerHTML=`
    <div class="modal-hero">
-     <div class="hero-art" style="background-image:url('${poster(a,1200,700)}')"></div>
+     <div class="hero-art" style="background-image:url('${heroArt(a)}')"></div>
      <div class="hero-overlay"></div>
      <div class="modal-hero-content"><h2 id="modalTitle">${esc(a.title)}</h2>
        <div class="modal-actions">
@@ -418,6 +426,13 @@ el.cardGrid.addEventListener("change",e=>{const s=e.target.closest("[data-status
 el.modalClose.addEventListener("click",closeModal);
 el.modalBackdrop.addEventListener("click",e=>{if(e.target===el.modalBackdrop)closeModal()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!el.modalBackdrop.hidden)closeModal()});
+/* A missing local cover falls back to generated art instead of a broken-image icon. */
+document.addEventListener("error",e=>{
+  const img=e.target;
+  if(img && img.tagName==="IMG" && img.dataset.fallback && img.src!==img.dataset.fallback){
+    img.src=img.dataset.fallback;
+  }
+},true);
 
 el.listCount.textContent=String(state.watchlist.length);
 renderChips();renderHero();render();
