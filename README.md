@@ -14,7 +14,8 @@ A curated, offline-capable catalog of 55 popular series and films. Everything â€
 - Genre filters and sort by score, popularity, or newest
 - Detail view with synopsis, stats, genres, and legal streaming lookup links
 - Personal watchlist with five statuses, persisted in `localStorage`
-- Deterministic generated artwork, so nothing depends on a remote image host
+- **My Videos** â€” an in-browser player for video files you already own. Drop files in, get a playlist with full native controls; files are stored in IndexedDB on your device and never uploaded.
+- Real locally-hosted cover art (54 images, ~5.5 MB), with generated art as fallback
 - Fully responsive, keyboard accessible
 
 ## Hosting
